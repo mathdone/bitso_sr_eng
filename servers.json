@@ -1,0 +1,15 @@
+{
+    "Servers": {
+      "1": {
+        "Name": "PostgresDB",
+        "Group": "Servers",
+        "Host": "postgres",
+        "Port": 5432,
+        "MaintenanceDB": "bitsoproject",
+        "Username": "bitsoproject",
+        "Password": "bitsoproject",
+        "SSLMode": "prefer"
+      }
+    }
+  }
+  

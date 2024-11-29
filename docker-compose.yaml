@@ -1,0 +1,103 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: bitsoproject
+      POSTGRES_PASSWORD: bitsoproject
+      POSTGRES_DB: bitsoproject
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  
+  pgadmin:
+    image: dpage/pgadmin4:7.8
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - ./servers.json:/pgadmin4/servers.json
+
+  ## was using dremio to inspect tables
+  # dremio:
+  #   container_name: dremio
+  #   image: dremio/dremio-oss
+  #   volumes:
+  #     - ./dremio:/opt/dremio/data
+  #     - ./data:/data
+  #   ports:
+  #     - "9047:9047"
+  #     - "31010:31010"
+  #     - "32010:32010"
+  #     - "45678:45678"
+
+  airflow_postgres:
+    image: postgres:15
+    container_name: airflow_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: bitsoproject
+      POSTGRES_PASSWORD: bitsoproject
+      POSTGRES_DB: airflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - airflow_pg_data:/var/lib/postgresql/data
+
+  airflow:
+    container_name: airflow
+    image: apache/airflow:2.7.2
+    restart: always
+    environment:
+      AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://bitsoproject:bitsoproject@airflow_postgres:5432/airflow"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW_UID: 50000
+      AIRFLOW_GID: ${AIRFLOW_GID:-0}
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+    depends_on:
+      - airflow_postgres
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags      
+      - ./data:/data
+      - ./src:/opt/airflow/plugins/src
+      - ./airflow_entrypoint.sh:/entrypoint.sh
+    ports:
+      - "8080:8080"
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-0}"
+    entrypoint: "/entrypoint.sh"
+
+  airflow_scheduler:
+    container_name: airflow_scheduler
+    image: apache/airflow:2.7.2
+    restart: always
+    depends_on:
+      - airflow
+      - airflow_postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://bitsoproject:bitsoproject@airflow_postgres:5432/airflow"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW_UID: 50000
+      AIRFLOW_GID: ${AIRFLOW_GID:-0}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags      
+      - ./data:/data
+      - ./src:/opt/airflow/plugins/src
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-0}"
+    command: "scheduler"
+  
+volumes:
+  pg_data:
+  airflow_pg_data:
