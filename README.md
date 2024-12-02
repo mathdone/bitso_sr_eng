@@ -35,3 +35,6 @@ pipenv run python run_migration.py
     - no support for keeping data ordered without rewriting whole table
 
 - Data lake was organized as bronze and silver
+
+![image](https://github.com/user-attachments/assets/a9ecd68a-0531-42a7-a33a-920ac5083cb2)
+
